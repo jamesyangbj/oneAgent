@@ -5,8 +5,8 @@ import "net"
 type MysqlConn struct {
 }
 
-func (m MysqlConn) NewConn(c net.Conn) {
-
+func (m MysqlConn) NewConn(c net.Conn) *Conn {
+	return nil
 }
 
 func (m MysqlConn) Close() {
