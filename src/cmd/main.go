@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"oneProxy/src/server"
 	"os"
 	"os/signal"
 	"runtime"
@@ -16,7 +17,6 @@ func main() {
 	flag.Parse()
 	fmt.Println(fmt.Sprintf("start oneProxy server... listen %s:%d\n", *host, *port))
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGTERM|syscall.SIGQUIT)
 
@@ -24,11 +24,15 @@ func main() {
 		s := <-sc
 		switch s {
 		case syscall.SIGTERM | syscall.SIGQUIT:
+			fmt.Println("receive signal SIGTERM, need to close the server. ")
 			os.Exit(1)
 			break
 		default:
 			fmt.Println("default signal handler")
 		}
 	}()
+
+	proxy := new(server.ProxyServer)
+	proxy.Start()
 
 }

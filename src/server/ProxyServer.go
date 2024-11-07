@@ -24,7 +24,7 @@ func (p *ProxyServer) NewServer() *ProxyServer {
 	return s
 }
 
-func (p *ProxyServer) start() {
+func (p *ProxyServer) Start() {
 	s, err := net.Listen("tcp", fmt.Sprintf("%s:%d", p.ListenHost, p.Port))
 	if err != nil {
 
