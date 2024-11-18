@@ -19,42 +19,42 @@ const (
 )
 
 type Instance struct {
-	name           string
-	host           string
-	port           int
-	startTime      int
-	status         int
-	role           int
-	addTime        int
-	lastModifyTime int
+	Name           string `yaml:"name"`
+	Host           string `yaml:"host"`
+	Port           int    `yaml:"port"`
+	StartTime      int    `yaml:"startTime"`
+	Status         int    `yaml:"status"`
+	Role           int    `yaml:"role"`
+	AddTime        int    `yaml:"addTime"`
+	LastModifyTime int    `yaml:"lastModifyTime"`
 }
 
 type Node struct {
-	name           string
-	master         Instance
-	slaves         []Instance
-	index          int
-	start          int64
-	end            int64
-	addTime        int
-	lastModifyTime int
-	readStrategy   int
-	writeStrategy  int
+	Name           string     `yaml:"name"`
+	Index          int        `yaml:"index"`
+	Start          int64      `yaml:"start"`
+	End            int64      `yaml:"end"`
+	AddTime        int        `yaml:"addTime"`
+	LastModifyTime int        `yaml:"lastModifyTime"`
+	ReadStrategy   int        `yaml:"readStrategy"`
+	WriteStrategy  int        `yaml:"writeStrategy"`
+	Master         Instance   `yaml:"master"`
+	Slaves         []Instance `yaml:"slaves"`
 }
 
 type Cluster struct {
-	clusterName    string
-	hashAlg        string
-	nodes          []Node
-	addTime        int
-	lastModifyTime int
+	ClusterName    string `yaml:"clusterName"`
+	HashAlg        string `yaml:"hashAlg"`
+	Nodes          []Node `yaml:"nodes"`
+	AddTime        int    `yaml:"addTime"`
+	LastModifyTime int    `yaml:"lastModifyTime"`
 }
 
 type ServerConfig struct {
-	listen  string
-	port    int
-	cluster Cluster
-	logFile string
+	Listen  string `yaml:"listen"`
+	Port    int    `yaml:"port"`
+	Cl      Cluster
+	LogFile string
 }
 
 func LoadConfig(path string) (*ServerConfig, error) {
@@ -71,8 +71,40 @@ func LoadConfig(path string) (*ServerConfig, error) {
 	return config, nil
 }
 
-func DumpConfig(aa *ServerConfig) {
+func DumpConfig(path string, aa *ServerConfig) {
 	data, _ := yaml.Marshal(aa)
 	fmt.Println(fmt.Sprintf("the data len is %d\n", len(data)))
-	ioutil.WriteFile("/tmp/test.yaml", data, 0777)
+	ioutil.WriteFile(path, data, 0777)
+}
+
+func GenTestConfig() *ServerConfig {
+	ins := new(Instance)
+	ins.Host = "127.0.0.1"
+	ins.Port = 3306
+	ins.Name = "test-instance"
+	ins.Role = MASTER
+	ins.Status = ALIVE
+
+	n := new(Node)
+	n.Index = 0
+	n.Start = 0
+	n.End = 1000000
+	n.Name = "test-node"
+	n.ReadStrategy = 1
+	n.WriteStrategy = 2
+
+	n.Master = *ins
+	n.Slaves = []Instance{*ins}
+
+	c := new(Cluster)
+	c.ClusterName = "test-Cl"
+	c.HashAlg = "region"
+	c.Nodes = []Node{*n}
+
+	config := new(ServerConfig)
+	config.Listen = "0.0.0.0"
+	config.Port = 9999
+	config.LogFile = "/tmp/server.log"
+	config.Cl = *c
+	return config
 }
