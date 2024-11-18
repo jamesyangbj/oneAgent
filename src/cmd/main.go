@@ -12,6 +12,7 @@ import (
 
 var host *string = flag.String("l", "0.0.0.0", "proxy listen address")
 var port *int = flag.Int("port", 9527, "proxy listen port")
+var configFile *string = flag.String("c", "/tmp/oneProxy.yaml", "the config file for proxy server")
 
 func main() {
 	flag.Parse()

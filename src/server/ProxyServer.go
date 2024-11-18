@@ -46,6 +46,6 @@ func (p *ProxyServer) Start() {
 
 }
 
-func processConn(c *net2.Conn) {
+func processConn(c *net2.FrontConn) {
 
 }

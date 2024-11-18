@@ -2,21 +2,21 @@ package net
 
 import "net"
 
-type MysqlConn struct {
+type BackendConn struct {
 }
 
-func (m MysqlConn) NewConn(c net.Conn) *Conn {
+func (m BackendConn) NewConn(c net.Conn) *BackendConn {
 	return nil
 }
 
-func (m MysqlConn) Close() {
+func (m BackendConn) Close() {
 
 }
 
-func (m MysqlConn) Read(c Conn, buf []byte, maxSize int) {
+func (m BackendConn) Read(c FrontConn, buf []byte, maxSize int) {
 
 }
 
-func (m MysqlConn) Write(c Conn, buf []byte, maxSize int) {
+func (m BackendConn) Write(c FrontConn, buf []byte, maxSize int) {
 
 }
