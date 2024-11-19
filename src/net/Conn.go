@@ -2,9 +2,9 @@ package net
 
 import "net"
 
-type FrontConn interface {
-	NewConn(c net.Conn) *FrontConn
+type Conn interface {
+	NewConn(c net.Conn) *Conn
 	Close()
-	Read(c FrontConn, buf []byte, maxSize int)
-	Write(c FrontConn, buf []byte, maxSize int)
+	ReadPacket() []byte
+	WritePacket(buf []byte)
 }
