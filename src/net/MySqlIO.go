@@ -55,25 +55,42 @@ func (p *PacketIO) ReadPacket() ([]byte, error) {
 }
 
 func (p *PacketIO) WritePacket(data []byte) error {
-	//TODO
-	length := len(data)
 	header := []byte{0, 0, 0, 0}
+	for {
+		allData := []byte{}
+		length := len(data)
+		if uint32(length) <= MaxPayloadLen {
+			break
+		}
+
+		header[0] = 0xff
+		header[1] = 0xff
+		header[2] = 0xff
+		header[3] = p.Sequence
+		allData = append(allData, header...)
+		allData = append(allData, data[:MaxPayloadLen]...)
+		data = data[MaxPayloadLen:]
+		p.Sequence++
+		p.writeData(allData)
+	}
+
+	allData := []byte{}
+	length := len(data)
 	header[0] = byte(length)
 	header[1] = byte(length >> 8)
 	header[2] = byte(length >> 16)
 	header[3] = p.Sequence
+	allData = append(allData, header...)
+	allData = append(allData, data...)
 
-	//write header
-	if _, err := p.wb.Write(header); err != nil {
-		return err
-	}
+	p.Sequence++
+	p.writeData(allData)
+	return nil
+}
 
-	//write body
+func (p *PacketIO) writeData(data []byte) error {
 	if _, err := p.wb.Write(data); err != nil {
 		return err
 	}
-
-	p.Sequence++
-
 	return nil
 }
