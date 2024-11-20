@@ -1,14 +1,14 @@
-package net
+package mysql
 
 import (
 	"bufio"
 	"io"
 	"net"
+	"oneProxy/src/config"
 )
 
 const (
-	DEFAULT_READER_SIZE        = 4 * 1024
-	MaxPayloadLen       uint32 = 1<<24 - 1
+	DEFAULT_READER_SIZE = 4 * 1024
 )
 
 type PacketIO struct {
@@ -41,7 +41,7 @@ func (p *PacketIO) ReadPacket() ([]byte, error) {
 	if _, err := io.ReadFull(p.rb, data); err != nil {
 		return nil, err
 	} else {
-		if length < MaxPayloadLen {
+		if int(length) < config.MaxPayloadLen {
 			return data, err
 		} else {
 			var buf []byte
@@ -59,7 +59,7 @@ func (p *PacketIO) WritePacket(data []byte) error {
 	for {
 		allData := []byte{}
 		length := len(data)
-		if uint32(length) <= MaxPayloadLen {
+		if int(length) <= config.MaxPayloadLen {
 			break
 		}
 
@@ -68,8 +68,8 @@ func (p *PacketIO) WritePacket(data []byte) error {
 		header[2] = 0xff
 		header[3] = p.Sequence
 		allData = append(allData, header...)
-		allData = append(allData, data[:MaxPayloadLen]...)
-		data = data[MaxPayloadLen:]
+		allData = append(allData, data[:config.MaxPayloadLen]...)
+		data = data[config.MaxPayloadLen:]
 		p.Sequence++
 		p.writeData(allData)
 	}

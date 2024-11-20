@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
-	net2 "oneProxy/src/net"
+	mysql "oneProxy/src/mysql"
 )
 
 type ProxyServer struct {
@@ -27,8 +27,9 @@ func (p *ProxyServer) NewServer() *ProxyServer {
 func (p *ProxyServer) Start() {
 	s, err := net.Listen("tcp", fmt.Sprintf("%s:%d", p.ListenHost, p.Port))
 	if err != nil {
-
+		return
 	}
+
 	for {
 		c, _ := s.Accept()
 
@@ -36,16 +37,27 @@ func (p *ProxyServer) Start() {
 		case "mysql":
 			break
 		default:
-			n := net2.NewConn(c)
+			n := mysql.NewConn(c)
 			go processConn(n)
 			break
-
 		}
 
 	}
 
 }
 
-func processConn(c *net2.FrontConn) {
+func processConn(c *mysql.FrontConn) {
+	if err := c.Handshake(); err != nil {
+		fmt.Println("fail to handshake with client , to close the conn.")
+		c.Close()
+		return
+	}
 
+	for {
+		if err := c.HandleData(); err != nil {
+			fmt.Println("fail to handle cmd data with client , to close the conn.")
+			c.Close()
+			return
+		}
+	}
 }
