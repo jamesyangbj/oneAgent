@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	config "oneProxy/src/config"
+	util "oneProxy/src/util"
 	"reflect"
 	"time"
 	"unsafe"
@@ -27,44 +28,6 @@ type FrontConn struct {
 
 	user string
 	db   string
-}
-
-type Result struct {
-	Status uint16
-
-	InsertId     uint64
-	AffectedRows uint64
-
-	*Resultset
-}
-
-type RowData []byte
-
-type Resultset struct {
-	Fields     []*Field
-	FieldNames map[string]int
-	Values     [][]interface{}
-
-	RowDatas []RowData
-}
-
-type FieldData []byte
-
-type Field struct {
-	Data         FieldData
-	Schema       []byte
-	Table        []byte
-	OrgTable     []byte
-	Name         []byte
-	OrgName      []byte
-	Charset      uint16
-	ColumnLength uint32
-	Type         uint8
-	Flag         uint16
-	Decimal      uint8
-
-	DefaultValueLength uint64
-	DefaultValue       []byte
 }
 
 func NewConn(c net.Conn) *FrontConn {
@@ -296,24 +259,6 @@ func (c *FrontConn) writeEOF(i int) error {
 	return nil
 }
 
-func PutLengthEncodedInt(n uint64) []byte {
-	switch {
-	case n <= 250:
-		return []byte{byte(n)}
-
-	case n <= 0xffff:
-		return []byte{0xfc, byte(n), byte(n >> 8)}
-
-	case n <= 0xffffff:
-		return []byte{0xfd, byte(n), byte(n >> 8), byte(n >> 16)}
-
-	case n <= 0xffffffffffffffff:
-		return []byte{0xfe, byte(n), byte(n >> 8), byte(n >> 16), byte(n >> 24),
-			byte(n >> 32), byte(n >> 40), byte(n >> 48), byte(n >> 56)}
-	}
-	return nil
-}
-
 func (c *FrontConn) writeOK(r *Result) error {
 	if r == nil {
 		r = &Result{Status: c.status}
@@ -322,8 +267,8 @@ func (c *FrontConn) writeOK(r *Result) error {
 
 	data = append(data, config.OK_HEADER)
 
-	data = append(data, PutLengthEncodedInt(r.AffectedRows)...)
-	data = append(data, PutLengthEncodedInt(r.InsertId)...)
+	data = append(data, util.PutLengthEncodedInt(r.AffectedRows)...)
+	data = append(data, util.PutLengthEncodedInt(r.InsertId)...)
 
 	if c.capability&config.CLIENT_PROTOCOL_41 > 0 {
 		data = append(data, byte(r.Status), byte(r.Status>>8))
