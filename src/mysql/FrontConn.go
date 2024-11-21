@@ -170,7 +170,7 @@ func String(b []byte) (s string) {
 func (c *FrontConn) HandleData() error {
 	data, err := c.pkg.ReadPacket()
 	if err != nil {
-
+		return err
 	}
 	cmd := data[0]
 	data = data[1:]

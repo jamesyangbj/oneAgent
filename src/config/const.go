@@ -222,6 +222,6 @@ type CollationId uint8
 
 var (
 	DEFAULT_CHARSET                    = "utf8"
-	DEFAULT_COLLATION_ID   CollationId = 33
+	DEFAULT_COLLATION_ID   CollationId = 45
 	DEFAULT_COLLATION_NAME string      = "utf8_general_ci"
 )

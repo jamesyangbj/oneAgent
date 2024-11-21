@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"oneProxy/src/mysql"
 	"oneProxy/src/server"
 	"os"
 	"os/signal"
@@ -15,6 +16,9 @@ var port *int = flag.Int("port", 9527, "proxy listen port")
 var configFile *string = flag.String("c", "/tmp/oneProxy.yaml", "the config file for proxy server")
 
 func main() {
+	c := mysql.NewBackendConn()
+	c.Connect("127.0.0.1", 3306, "root", "taotaoJJ1986@", "")
+
 	flag.Parse()
 	fmt.Println(fmt.Sprintf("start oneProxy server... listen %s:%d\n", *host, *port))
 	runtime.GOMAXPROCS(runtime.NumCPU())

@@ -17,13 +17,14 @@ type BackendConn struct {
 	user       string
 	password   string
 	salt       []byte
-	charset    string
+	charset    byte
 	db         string
 	pkg        *PacketIO
 	pkgErr     error
 	capability uint32
 	status     uint16
 	collation  config.CollationId
+	plugin     string
 }
 
 func (c *BackendConn) Connect(host string, port int, user string, password string, db string) {
@@ -31,7 +32,8 @@ func (c *BackendConn) Connect(host string, port int, user string, password strin
 	c.Port = port
 	c.user = user
 	c.password = password
-	c.db = db
+	c.collation = config.DEFAULT_COLLATION_ID
+	//c.db = db
 
 	c.ReConnect()
 }
@@ -117,7 +119,7 @@ func (c *BackendConn) readInitialHandshake() error {
 
 	if len(data) > pos {
 		//skip server charset
-		//c.charset = data[pos]
+		c.charset = data[pos]
 		pos += 1
 
 		c.status = binary.LittleEndian.Uint16(data[pos : pos+2])
@@ -136,6 +138,12 @@ func (c *BackendConn) readInitialHandshake() error {
 		// mysql-proxy also use 12
 		// which is not documented but seems to work.
 		c.salt = append(c.salt, data[pos:pos+12]...)
+		pos += 13
+		if end := bytes.IndexByte(data[pos:], 0x00); end != -1 {
+			c.plugin = string(data[pos : pos+end])
+		} else {
+			c.plugin = string(data[pos:])
+		}
 	}
 
 	return nil
@@ -170,6 +178,8 @@ func (c *BackendConn) writeAuthHandshake() error {
 
 	c.capability = capability
 
+	length += len(c.plugin) + 1
+
 	data := make([]byte, length+4)
 
 	//capability [32 bit]
@@ -179,22 +189,25 @@ func (c *BackendConn) writeAuthHandshake() error {
 	data[7] = byte(capability >> 24)
 
 	//MaxPacketSize [32 bit] (none)
-	//data[8] = 0x00
-	//data[9] = 0x00
-	//data[10] = 0x00
-	//data[11] = 0x00
+	data[8] = 0x00
+	data[9] = 0x00
+	data[10] = 0x00
+	data[11] = 0x00
 
 	//Charset [1 byte]
 	data[12] = byte(c.collation)
 
 	//Filler [23 bytes] (all 0x00)
-	pos := 13 + 23
+	pos := 13
+	for ; pos < 13+23; pos++ {
+		data[pos] = 0
+	}
 
 	//User [null terminated string]
 	if len(c.user) > 0 {
 		pos += copy(data[pos:], c.user)
 	}
-	//data[pos] = 0x00
+	data[pos] = 0x00
 	pos++
 
 	// auth [length encoded integer]
@@ -204,15 +217,21 @@ func (c *BackendConn) writeAuthHandshake() error {
 	// db [null terminated string]
 	if len(c.db) > 0 {
 		pos += copy(data[pos:], c.db)
-		//data[pos] = 0x00
+		data[pos] = 0x00
+		pos++
 	}
 
-	return c.writePacket(data)
+	pos += copy(data[pos:], c.plugin)
+	data[pos] = 0x00
+	pos++
+
+	return c.writePacket(data[4:])
 }
 
 func (c *BackendConn) readOK() (*Result, error) {
 	data, err := c.readPacket()
 	if err != nil {
+		print(err)
 		return nil, err
 	}
 
@@ -220,7 +239,7 @@ func (c *BackendConn) readOK() (*Result, error) {
 		return c.handleOKPacket(data)
 	} else if data[0] == config.ERR_HEADER {
 		return nil, c.handleErrorPacket(data)
-	} else {
+	} else if data[0] == config.EOF_HEADER {
 		return nil, errors.New("invalid ok packet")
 	}
 	return nil, nil
